@@ -2,6 +2,7 @@ import com.typesafe.sbt.SbtMultiJvm.multiJvmSettings
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 
 val akkaVersion = "2.6.6"
+val circeVersion = "0.12.1"
 
 lazy val `akka-sample-cluster-scala` = project
   .in(file("."))
@@ -17,7 +18,11 @@ lazy val `akka-sample-cluster-scala` = project
       "com.typesafe.akka" %% "akka-cluster-typed"         % akkaVersion,
       "com.typesafe.akka" %% "akka-stream"                % akkaVersion,
       "com.typesafe.akka" %% "akka-serialization-jackson" % akkaVersion,
-      "ch.qos.logback"    %  "logback-classic"             % "1.2.3",
+      "io.circe"          %% "circe-core"                 % circeVersion,
+      "io.circe"          %% "circe-parser"               % circeVersion,
+      "io.circe"          %% "circe-generic-extras"       % circeVersion,
+      "io.circe"          %% "circe-config"               % "0.7.0",
+      "ch.qos.logback"    %  "logback-classic"            % "1.2.3",
       "com.typesafe.akka" %% "akka-multi-node-testkit"    % akkaVersion % Test,
       "org.scalatest"     %% "scalatest"                  % "3.0.8"     % Test,
       "com.typesafe.akka" %% "akka-actor-testkit-typed"   % akkaVersion % Test),
