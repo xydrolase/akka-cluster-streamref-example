@@ -42,7 +42,6 @@ object TaskSlotManager {
             val source = Source
               .tick(1 second, 1 second, NotUsed)
               .map { _ =>
-                println("Tick!")
                 Random.nextInt(100000)
               }
               .mapMaterializedValue(_ => NotUsed)
@@ -51,10 +50,11 @@ object TaskSlotManager {
             val ingressProcessor = ctx.spawnAnonymous(DataIngressProcessor.apply(source))
             ctx.system.receptionist ! Receptionist.register(DataIngressProcessor.serviceKey, ingressProcessor)
           case "data-processor" =>
-            val sink = Sink.foreach[Int] { int => println(s"Received data: $int") }.mapMaterializedValue(_ => NotUsed)
+            val actorName = "DataProcessor-" + Random.nextInt(100000)
+            val sink = Sink.foreach[Int] { int => println(s"[$actorName] Received data: $int") }.mapMaterializedValue(_ => NotUsed)
 
             // TODO: monitor the child actor (upon termination, unregister?)
-            val processor = ctx.spawnAnonymous(DataProcessor(sink))
+            val processor = ctx.spawn(DataProcessor(sink), actorName)
 
             ctx.system.receptionist ! Receptionist.register(DataProcessor.serviceKey, processor)
           case invalidRole =>

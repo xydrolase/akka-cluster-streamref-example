@@ -8,8 +8,7 @@ import com.typesafe.config.ConfigFactory
 object App {
   object RootBehavior {
     def apply(): Behavior[Nothing] = Behaviors.setup[Nothing] { ctx =>
-      val classActorSytem = akka.actor.ActorSystem("Streams")
-      implicit val materializer = Materializer.apply(classActorSytem)
+      val materializer = Materializer.apply(ctx.system.classicSystem)
 
       ctx.spawn(TaskSlotManager.apply(materializer), "TaskSlotManager")
 
@@ -20,7 +19,7 @@ object App {
   def main(args: Array[String]): Unit = {
     val ports = {
       if (args.isEmpty)
-        Seq(25251, 25252, 0)
+        Seq(25251, 25252, 25253, 25254, 25255)
       else
         args.toSeq.map(_.toInt)
     }
