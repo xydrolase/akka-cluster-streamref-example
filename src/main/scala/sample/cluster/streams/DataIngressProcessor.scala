@@ -8,8 +8,6 @@ import akka.stream.{Materializer, SourceRef}
 import akka.stream.scaladsl.{Keep, PartitionHub, Source, StreamRefs}
 import sample.cluster.CborSerializable
 
-import scala.util.Random
-
 object DataIngressProcessor {
 
   sealed trait Command

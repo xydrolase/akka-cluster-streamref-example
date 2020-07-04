@@ -7,8 +7,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.{Materializer, SourceRef}
 import akka.stream.scaladsl.{MergeHub, Sink}
 
-import scala.util.{Failure, Success}
-
 object DataProcessor {
   sealed trait Command
   case class ReceptionistListingResponse(listing: Receptionist.Listing) extends Command
@@ -57,7 +55,7 @@ object DataProcessor {
 
       initialized(sink, seenSources ++ newSources)
     case (ctx, StreamReferenceResponse(ref)) =>
-      ctx.log.info("Got SourceRef, adding to the MergeHub")
+      ctx.log.info(s"Got SourceRef, adding to the MergeHub (${seenSources.size} total)")
       // TODO: how to monitor if the resource ended?
       ref.source.runWith(sink)
 
