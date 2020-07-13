@@ -14,18 +14,13 @@ import scala.util.Random
 
 object App {
   object RootBehavior {
-    def spawnEntityCreator[T](entityTypeKey: EntityTypeKey[T], command: T): (ClusterSharding, EntityId) => Unit = {
-      (sharding: ClusterSharding, entityId: EntityId) => {
-        sharding.entityRefFor(entityTypeKey, entityId) ! command
-      }
-    }
 
     def apply(): Behavior[Nothing] = Behaviors.setup[Nothing] { ctx =>
       implicit val materializer = Materializer.apply(ctx.system.classicSystem)
       val singletonManager = ClusterSingleton(ctx.system)
 
       val source = Source
-        .tick(50.milliseconds, 50.milliseconds, NotUsed)
+        .tick(500.milliseconds, 500.milliseconds, NotUsed)
         .map { _ => Random.nextInt(100000) }
         .mapMaterializedValue(_ => NotUsed)
 
@@ -35,14 +30,14 @@ object App {
       DataProcessor.initSharding(ctx.system, sink)
       DataIngress.initSharding(ctx.system, source)
 
-      val entityCreators: Map[String, (ClusterSharding, EntityId) => Unit] = Map(
-        "data-ingress" -> spawnEntityCreator(DataIngress.typeKey, DataIngress.Initialize),
-        "data-processor" -> spawnEntityCreator(DataProcessor.typeKey, DataProcessor.Initialize)
+      val entityHelpers: Map[String, EntityTypeHelper[_]] = Map(
+        "data-ingress" -> EntityTypeHelper(DataIngress.typeKey, DataIngress.Initialize),
+        "data-processor" -> EntityTypeHelper(DataProcessor.typeKey, DataProcessor.Initialize)
       )
 
       val jobManager = singletonManager.init(
         SingletonActor(
-          Behaviors.supervise(JobManager.apply(entityCreators)).onFailure[Exception](SupervisorStrategy.restart),
+          Behaviors.supervise(JobManager.apply(entityHelpers)).onFailure[Exception](SupervisorStrategy.restart),
           "JobManager"
         )
       )
