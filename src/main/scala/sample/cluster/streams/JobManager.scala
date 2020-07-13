@@ -61,11 +61,11 @@ object JobManager {
               maxNrPerNode <- constraint.maxNrPerNode
             } yield {
               val clusterSize = if (state.members.contains(member)) state.members.size - 1 else state.members.size
-              entityCount - maxNrPerNode * clusterSize
+              maxNrPerNode * clusterSize - entityCount
             }
 
             entityNrToRemove match {
-              case Some(nr) =>
+              case Some(nr) if nr > 0 =>
                 val updatedEntityIds = (1 to nr).foldLeft(allocated(taskName)) { case (entityIds, _) =>
                   if (entityIds.nonEmpty) {
                     ctx.log.info(s"Killing Entity ${entityIds.head} for task $taskName")
@@ -76,7 +76,7 @@ object JobManager {
                 }
 
                 allocated.updated(taskName, updatedEntityIds)
-              case None => allocated
+              case _ => allocated
             }
           }
 

@@ -25,7 +25,7 @@ object DataProcessor {
 
   case class StreamReferenceResponse(ref: SourceRef[Int]) extends Command
 
-  def initSharding(system: ActorSystem[_], processor: Sink[Int, NotUsed])
+  def initSharding(system: ActorSystem[_], processor: (String) => Sink[Int, NotUsed])
                   (implicit materializer: Materializer): Unit = {
     ClusterSharding(system).init(Entity(typeKey) { entityContext =>
       apply(entityContext.entityId, processor)
@@ -36,7 +36,7 @@ object DataProcessor {
     clusterSharding.entityRefFor(typeKey, entityId) ! Initialize
   }
 
-  def apply(entityId: String, processor: Sink[Int, NotUsed])
+  def apply(entityId: String, processorFn: (String) => Sink[Int, NotUsed])
            (implicit materializer: Materializer): Behavior[Command] = Behaviors.setup { ctx =>
     ctx.log.info(s"Creating DataProcessor: $entityId")
 
@@ -44,6 +44,8 @@ object DataProcessor {
       DataIngress.serviceKey,
       ctx.messageAdapter[Receptionist.Listing](ReceptionistListingResponse)
     )
+
+    val processor = processorFn(entityId)
 
     // create a MergeHub so that we can merge all (remote) sources
     ctx.log.info("Starting a RunnableGraph for DataProcessor")

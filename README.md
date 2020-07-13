@@ -5,15 +5,23 @@ This example is based on the [Akka Cluster example project](https://doc.akka.io/
 ## Overview
 This project uses two actors to coordinate a dynamic stream processing cluster:
 
- - `DataIngressProcessor`: the actor that manages and provides data sources
- - `DataProcessor`: the actor that requests `SourceRef` from `DataIngressProcessor`, and runs the materialized remote
+ - `DataIngress`: the actor that manages and provides data sources
+ - `DataProcessor`: the actor that requests `SourceRef` from `DataIngress`, and runs the materialized remote
     source with a data-processing `Sink`.
     
-These two types of worker actors are spawned by the `TaskSlotManager` actor, which has a fixed amount of "task slots"
-which can be filled with either `DataIngressProcessor` or `DataProcessor`.
+Instead of creating these two types of actors directly, we use Akka Cluster Sharding to manage them as "entities".
+A cluster singleton actor, `JobManager`, is responsible for spawning new entities upon new members joining
+the cluster. For each new member, up to `max-nr-per-node` entities of a given type can be created, unless the number
+of entities of that given type has already exceeded the `max-nr` defined in `streams.conf`.
 
-The task slot assignment is coordinated by the cluster singleton actor, `TaskCoordinator`, which manages the overall
-number of tasks, and assigns roles to `TaskSlotManager`.
+## Known bugs
+The internal state of the `JobManager` singleton actor is not properly persisted at the moment (unlike `ShardCoordinator`).
+As a result, if the `JobManager` moves from one node to another, it will lose all its internal states, which may result 
+in duplicated entity IDs, and thus violate the single-writer principle.
+
+To solve this issue, we can consult with the implementation of `ShardCoordinator`. Or, instead of relying on the internal
+state of `JobManager`, we can consider querying the `ShardCoordinator` for the current entity state. Therefore, we can
+ensure data consistency.
 
 ## Usage 
 

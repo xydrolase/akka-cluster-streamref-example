@@ -20,14 +20,16 @@ object App {
       val singletonManager = ClusterSingleton(ctx.system)
 
       val source = Source
-        .tick(500.milliseconds, 500.milliseconds, NotUsed)
+        .tick(1000.milliseconds, 10000.milliseconds, NotUsed)
         .map { _ => Random.nextInt(100000) }
         .mapMaterializedValue(_ => NotUsed)
 
-      val sink = Sink.foreach[Int] { int => println(s"Received data: $int") }
-        .mapMaterializedValue(_ => NotUsed)
+      val sinkFn = (entityId: String) => {
+        Sink.foreach[Int] { int => println(s"[$entityId] Received data: $int") }
+          .mapMaterializedValue(_ => NotUsed)
+      }
 
-      DataProcessor.initSharding(ctx.system, sink)
+      DataProcessor.initSharding(ctx.system, sinkFn)
       DataIngress.initSharding(ctx.system, source)
 
       val entityHelpers: Map[String, EntityTypeHelper[_]] = Map(
@@ -53,6 +55,8 @@ object App {
       else
         args.toSeq.map(_.toInt)
     }
+
+    println(s"Starting up for ports: $ports")
 
     ports.foreach(startup)
   }
